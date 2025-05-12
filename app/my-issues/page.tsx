@@ -157,7 +157,7 @@ export default function MyIssuesPage() {
           <CardHeader className="text-center">
             <CardTitle>No issues reported yet</CardTitle>
             <p className="text-muted-foreground mt-2">
-              You haven&apos;t reported any civic issues yet. Click the button above to report your first issue.
+              You haven&apos;t reported any civic issues yet. Click the button below to report your first issue.
             </p>
             <div className="mt-6">
               <Link href="/issues/new">

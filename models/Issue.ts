@@ -13,6 +13,10 @@ export interface IIssue extends mongoose.Document {
   createdBy: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
+  longitude?: number
+  latitude?: number
+  votes?: number
+  userHasVoted?: boolean
 }
 
 const IssueSchema = new mongoose.Schema(

@@ -42,66 +42,134 @@ export default function NewIssuePage() {
     }
   }
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+
+  //   if (!title || !description || !category || !location) {
+  //     toast({
+  //       title: "Missing information",
+  //       description: "Please fill in all required fields",
+  //       variant: "destructive",
+  //     })
+  //     return
+  //   }
+
+  //   setIsSubmitting(true)
+
+  //   try {
+  //     // In a real app, you would upload the image to a storage service
+  //     // and get a URL back. For now, we'll just use a placeholder.
+  //     let imageUrl = null
+  //     if (image) {
+  //       // This is a placeholder. In a real app, you would upload the image
+  //       // to a storage service like AWS S3, Cloudinary, etc.
+  //       imageUrl = `/placeholder.svg?height=300&width=400&text=${encodeURIComponent(title)}`
+  //     }
+
+  //     const response = await fetch("/api/issues", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         title,
+  //         description,
+  //         category,
+  //         location,
+  //         imageUrl,
+  //       }),
+  //     })
+
+  //     if (!response.ok) {
+  //       const data = await response.json()
+  //       throw new Error(data.error || "Failed to create issue")
+  //     }
+
+  //     toast({
+  //       title: "Issue reported",
+  //       description: "Your issue has been successfully reported",
+  //     })
+
+  //     router.push("/my-issues")
+  //   } catch (error: any) {
+  //     console.error("Error creating issue:", error)
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "There was a problem submitting your issue. Please try again.",
+  //       variant: "destructive",
+  //     })
+  //   } finally {
+  //     setIsSubmitting(false)
+  //   }
+  // }
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  e.preventDefault()
 
-    if (!title || !description || !category || !location) {
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      // In a real app, you would upload the image to a storage service
-      // and get a URL back. For now, we'll just use a placeholder.
-      let imageUrl = null
-      if (image) {
-        // This is a placeholder. In a real app, you would upload the image
-        // to a storage service like AWS S3, Cloudinary, etc.
-        imageUrl = `/placeholder.svg?height=300&width=400&text=${encodeURIComponent(title)}`
-      }
-
-      const response = await fetch("/api/issues", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          category,
-          location,
-          imageUrl,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to create issue")
-      }
-
-      toast({
-        title: "Issue reported",
-        description: "Your issue has been successfully reported",
-      })
-
-      router.push("/my-issues")
-    } catch (error: any) {
-      console.error("Error creating issue:", error)
-      toast({
-        title: "Error",
-        description: error.message || "There was a problem submitting your issue. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (!title || !description || !category || !location) {
+    toast({
+      title: "Missing information",
+      description: "Please fill in all required fields",
+      variant: "destructive",
+    })
+    return
   }
+
+  setIsSubmitting(true)
+
+  try {
+    let imageUrl = null
+
+    if (image) {
+      const formData = new FormData()
+      formData.append("file", image)
+      formData.append("upload_preset", "unsigned_preset") 
+      const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData,
+      })
+      const cloudinaryData = await cloudinaryResponse.json()
+      if (!cloudinaryData.secure_url) throw new Error("Image upload failed")
+      imageUrl = cloudinaryData.secure_url
+    }
+
+    const response = await fetch("/api/issues", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        description,
+        category,
+        location,
+        imageUrl,
+      }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || "Failed to create issue")
+    }
+
+    toast({
+      title: "Issue reported",
+      description: "Your issue has been successfully reported",
+    })
+
+    router.push("/my-issues")
+  } catch (error: any) {
+    console.error("Error creating issue:", error)
+    toast({
+      title: "Error",
+      description: error.message || "There was a problem submitting your issue. Please try again.",
+      variant: "destructive",
+    })
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
 
   return (
     <div className="container py-8">

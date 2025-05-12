@@ -1,43 +1,48 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { generateMapData } from "@/lib/data"
-import { MapPin, ThumbsUp } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { generateMapData } from "@/lib/data";
+import { MapPin, ThumbsUp } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import dynamic from "next/dynamic";
+
+// Dynamically import the map to avoid SSR issues
+const DynamicMap = dynamic(() => import("@/components/dynamicMap"), {
+  ssr: false,
+});
 
 export default function MapPage() {
-  const [mapData, setMapData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedIssue, setSelectedIssue] = useState<string | null>(null)
+  const [mapData, setMapData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const data = generateMapData()
-      setMapData(data)
-      setLoading(false)
-    }, 1500)
+      const data = generateMapData();
+      setMapData(data);
+      setLoading(false);
+    }, 1500);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Status badge color mapping
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500"
+        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500";
       case "In Progress":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-500"
+        return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-500";
       case "Resolved":
-        return "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500"
+        return "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500";
       default:
-        return ""
+        return "";
     }
-  }
+  };
 
   return (
     <div className="container py-8">
@@ -52,56 +57,7 @@ export default function MapPage() {
             <Skeleton className="w-full h-[500px] rounded-lg" />
           ) : (
             <div className="relative w-full h-[500px] bg-muted rounded-lg overflow-hidden border">
-              {/* Map placeholder - in a real app, this would be a map component */}
-              <div className="absolute inset-0 bg-[url('/placeholder.svg?height=500&width=800&text=Interactive+Map')] bg-center bg-cover">
-                {/* Map markers */}
-                {mapData.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className={`absolute cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all ${
-                      selectedIssue === issue.id ? "z-10 scale-125" : "z-0 hover:scale-110"
-                    }`}
-                    style={{
-                      left: `${((issue.longitude + 74.006) / 0.1 + 0.5) * 100}%`,
-                      top: `${((issue.latitude - 40.7128) / 0.1 + 0.5) * 100}%`,
-                    }}
-                    onClick={() => setSelectedIssue(issue.id === selectedIssue ? null : issue.id)}
-                  >
-                    <div
-                      className={`p-1 rounded-full ${
-                        issue.status === "Pending"
-                          ? "bg-yellow-500"
-                          : issue.status === "In Progress"
-                            ? "bg-blue-500"
-                            : "bg-green-500"
-                      }`}
-                    >
-                      <MapPin className="h-5 w-5 text-white" />
-                    </div>
-
-                    {selectedIssue === issue.id && (
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-background rounded-lg shadow-lg border p-3 z-20">
-                        <h3 className="font-medium mb-1">{issue.title}</h3>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className={getStatusColor(issue.status)}>
-                            {issue.status}
-                          </Badge>
-                          <div className="flex items-center text-sm">
-                            <ThumbsUp className="h-3.5 w-3.5 mr-1" />
-                            {issue.votes}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">{issue.location}</p>
-                        <Link href={`/issues/${issue.id}`}>
-                          <Button size="sm" className="w-full">
-                            View Details
-                          </Button>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <DynamicMap issues={mapData} selectedId={selectedIssue} onSelect={setSelectedIssue} />
             </div>
           )}
         </div>
@@ -130,9 +86,8 @@ export default function MapPage() {
                     {mapData.slice(0, 10).map((issue) => (
                       <div
                         key={issue.id}
-                        className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                          selectedIssue === issue.id ? "bg-muted/50" : ""
-                        }`}
+                        className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${selectedIssue === issue.id ? "bg-muted/70  border-red-700" : ""
+                          }`}
                         onClick={() => setSelectedIssue(issue.id === selectedIssue ? null : issue.id)}
                       >
                         <h3 className="font-medium line-clamp-1">{issue.title}</h3>
@@ -158,5 +113,5 @@ export default function MapPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
