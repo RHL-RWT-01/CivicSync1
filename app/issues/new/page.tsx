@@ -1,0 +1,230 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
+import Link from "next/link"
+
+export default function NewIssuePage() {
+  const router = useRouter()
+  const { toast } = useToast()
+  const { user } = useAuth()
+
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [category, setCategory] = useState("")
+  const [location, setLocation] = useState("")
+  const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImage(file)
+
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setImagePreview(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!title || !description || !category || !location) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      // In a real app, you would upload the image to a storage service
+      // and get a URL back. For now, we'll just use a placeholder.
+      let imageUrl = null
+      if (image) {
+        // This is a placeholder. In a real app, you would upload the image
+        // to a storage service like AWS S3, Cloudinary, etc.
+        imageUrl = `/placeholder.svg?height=300&width=400&text=${encodeURIComponent(title)}`
+      }
+
+      const response = await fetch("/api/issues", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          location,
+          imageUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to create issue")
+      }
+
+      toast({
+        title: "Issue reported",
+        description: "Your issue has been successfully reported",
+      })
+
+      router.push("/my-issues")
+    } catch (error: any) {
+      console.error("Error creating issue:", error)
+      toast({
+        title: "Error",
+        description: error.message || "There was a problem submitting your issue. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="container py-8">
+      <Link href="/issues">
+        <Button variant="ghost" size="sm" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
+        </Button>
+      </Link>
+
+      <div className="max-w-2xl mx-auto">
+        <Card>
+          <CardHeader>
+            <CardTitle>Report a Civic Issue</CardTitle>
+            <CardDescription>Provide details about the issue you want to report</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  placeholder="Brief summary of the issue"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={category} onValueChange={setCategory} required>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Road">Road</SelectItem>
+                    <SelectItem value="Water">Water</SelectItem>
+                    <SelectItem value="Sanitation">Sanitation</SelectItem>
+                    <SelectItem value="Electricity">Electricity</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="e.g., Sector 15, Chandigarh"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Detailed explanation of the issue"
+                  rows={5}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="image">Image (Optional)</Label>
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById("image")?.click()}
+                    className="w-full h-32 border-dashed flex flex-col items-center justify-center"
+                  >
+                    <ImagePlus className="h-8 w-8 mb-2 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Click to upload</span>
+                  </Button>
+                  <input id="image" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+
+                  {imagePreview && (
+                    <div className="relative h-32 w-32 rounded-md overflow-hidden">
+                      <img
+                        src={imagePreview || "/placeholder.svg"}
+                        alt="Preview"
+                        className="h-full w-full object-cover"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                        onClick={() => {
+                          setImage(null)
+                          setImagePreview(null)
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">Upload an image of the issue (max 5MB)</p>
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting
+                  </>
+                ) : (
+                  "Submit Report"
+                )}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    </div>
+  )
+}
