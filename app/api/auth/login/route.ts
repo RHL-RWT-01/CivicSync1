@@ -8,21 +8,18 @@ export async function POST(request: Request) {
 
     const { email, password } = await request.json()
 
-    // Find user and include password for comparison
     const user = await User.findOne({ email }).select("+password")
 
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Compare password
     const isPasswordValid = await user.comparePassword(password)
 
     if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Return user without password
     const userWithoutPassword = {
       id: user._id,
       name: user.name,

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
     const { name, email, password } = await request.json()
 
-    // Check if user already exists
+    // Checks if user already exists
     const existingUser = await User.findOne({ email })
     if (existingUser) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 })
@@ -21,7 +21,6 @@ export async function POST(request: Request) {
       password,
     })
 
-    // Return user without password
     const userWithoutPassword = {
       id: user._id,
       name: user.name,
