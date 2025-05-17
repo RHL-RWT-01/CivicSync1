@@ -1,10 +1,5 @@
-// NewIssuePage.tsx
 "use client"
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -16,7 +11,6 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -24,18 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-} from "react-leaflet"
-import L from "leaflet"
 import "leaflet/dist/leaflet.css"
-import { LocationPickerMap } from "@/components/LocationPickerMap"
+import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
+import dynamic from "next/dynamic"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import type React from "react"
+import { useState } from "react"
+
+const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap").then(mod => mod.default), {
+  ssr: false,
+})
 
 export default function NewIssuePage() {
   const router = useRouter()
@@ -223,7 +219,6 @@ export default function NewIssuePage() {
                 lng={lng}
                 setLatLng={setLatLng}
                 setLocationText={setLocation}
-                location={location}
               />
 
               <div className="space-y-2">

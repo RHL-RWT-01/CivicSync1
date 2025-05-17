@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
-import { LatLngExpression, Map as LeafletMap } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import '@/lib/fixLeafletIcon';
+import { LatLngExpression } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { useEffect, useState } from 'react';
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 
 type Issue = {
     id: string;

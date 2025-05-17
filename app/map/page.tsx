@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { generateMapData } from "@/lib/data";
-import { MapPin, ThumbsUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
 const DynamicMap = dynamic(() => import("@/components/dynamicMap"), {
   ssr: false,

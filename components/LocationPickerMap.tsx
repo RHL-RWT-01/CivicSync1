@@ -1,14 +1,13 @@
 "use client"
 
-import React from "react"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
 import {
   MapContainer,
   Marker,
   TileLayer,
   useMapEvents,
 } from "react-leaflet"
-import L from "leaflet"
-import "leaflet/dist/leaflet.css"
 
 const pulseIcon = L.divIcon({
   className: "",
@@ -22,7 +21,7 @@ const pulseIcon = L.divIcon({
   iconAnchor: [8, 8],
 })
 
-export function LocationMarker({
+export default function LocationMarker({
   lat,
   lng,
   setLatLng,

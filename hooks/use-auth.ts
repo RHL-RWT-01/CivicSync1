@@ -1,8 +1,8 @@
 "use client"
 
-import { useSession, signIn as nextAuthSignIn, signOut as nextAuthSignOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export const useAuth = () => {
   const { data: session, status } = useSession()

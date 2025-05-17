@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
 import { BarChart, DonutChart, LineChart } from "@/components/charts"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { BarChart2, CheckCircle, ListTodo, ThumbsUp } from "lucide-react"
+import { useEffect, useState } from "react"
 
 interface AnalyticsData {
   issuesByCategory: { name: string; value: number }[]

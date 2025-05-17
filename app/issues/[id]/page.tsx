@@ -1,34 +1,36 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import { ArrowLeft, Calendar, MapPin, ThumbsUp, User } from "lucide-react"
+import type { IssueCategory, IssueStatus } from "@/models/Issue"
 import { format } from "date-fns"
-import type { IssueStatus } from "@/models/Issue"
+import { ArrowLeft, Calendar, MapPin, ThumbsUp, User } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 interface Issue {
   id: string
   title: string
   description: string
-  category: string
+  category: IssueCategory
   location: string
   imageUrl?: string
   status: IssueStatus
-  votes: number
   createdAt: string
+  longitude?: number
+  latitude?: number
   createdBy: {
     id: string
     name: string
     email: string
   }
+  votes: number
   userHasVoted: boolean
 }
 
@@ -42,15 +44,13 @@ export default function IssueDetailPage() {
   const [voteLoading, setVoteLoading] = useState(false)
 
   useEffect(() => {
-    if (!params.id) return
-    fetchIssue()
+    if (params.id) fetchIssue()
   }, [params.id])
 
   const fetchIssue = async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/issues/${params.id}`)
-
       if (!response.ok) {
         if (response.status === 404) {
           toast({
@@ -90,42 +90,45 @@ export default function IssueDetailPage() {
     }
 
     if (!issue) return
-
     setVoteLoading(true)
+
     try {
       const response = await fetch(`/api/issues/${issue.id}/vote`, {
-        method: "POST",
+        method: issue.userHasVoted ? "DELETE" : "POST",
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        const data = await response.json()
         toast({
           title: "Vote failed",
-          description: data.error || "You can only vote once per issue",
+          description: data.error || "An error occurred.",
           variant: "destructive",
         })
         return
       }
 
-      const data = await response.json()
-      setIssue((prev) => {
-        if (!prev) return null
-        return {
-          ...prev,
-          votes: data.votes,
-          userHasVoted: data.userHasVoted,
-        }
-      })
+      setIssue((prev) =>
+        prev
+          ? {
+            ...prev,
+            votes: data.votes,
+            userHasVoted: data.userHasVoted,
+          }
+          : prev
+      )
 
       toast({
-        title: "Vote recorded",
-        description: "Your vote has been successfully recorded",
+        title: issue.userHasVoted ? "Vote removed" : "Vote recorded",
+        description: issue.userHasVoted
+          ? "Your vote has been removed."
+          : "Your vote has been successfully recorded.",
       })
     } catch (error) {
       console.error("Error voting:", error)
       toast({
         title: "Error",
-        description: "Failed to record your vote. Please try again.",
+        description: "Failed to process your vote. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -133,7 +136,6 @@ export default function IssueDetailPage() {
     }
   }
 
-  // Status badge color mapping
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending":
@@ -150,36 +152,14 @@ export default function IssueDetailPage() {
   if (loading) {
     return (
       <div className="container py-8">
-        <div className="mb-6">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
-          </Button>
-          <Skeleton className="h-10 w-3/4 mb-4" />
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Skeleton className="h-6 w-20" />
-            <Skeleton className="h-6 w-24" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-[300px] w-full rounded-lg" />
-            <div className="space-y-4">
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-full" />
-              <Skeleton className="h-6 w-3/4" />
-            </div>
-          </div>
-          <div>
-            <Card>
-              <CardContent className="p-6 space-y-4">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <Button variant="ghost" size="sm" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
+        </Button>
+        <Skeleton className="h-10 w-3/4 mb-4" />
+        <Skeleton className="h-[300px] w-full rounded-lg mb-6" />
+        <Skeleton className="h-6 w-full mb-2" />
+        <Skeleton className="h-6 w-3/4 mb-6" />
+        <Skeleton className="h-10 w-full" />
       </div>
     )
   }
@@ -188,33 +168,30 @@ export default function IssueDetailPage() {
 
   return (
     <div className="container py-8">
-      <div className="mb-6">
-        <Link href="/issues">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
-          </Button>
-        </Link>
-        <h1 className="text-3xl font-bold tracking-tight mb-4">{issue.title}</h1>
-        <div className="flex flex-wrap gap-2 mb-6">
-          <Badge variant="secondary">{issue.category}</Badge>
-          <Badge variant="outline" className={getStatusColor(issue.status)}>
-            {issue.status}
-          </Badge>
-        </div>
+      <Link href="/issues">
+        <Button variant="ghost" size="sm" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
+        </Button>
+      </Link>
+
+      <h1 className="text-3xl font-bold tracking-tight mb-4">{issue.title}</h1>
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Badge variant="secondary">{issue.category}</Badge>
+        <Badge variant="outline" className={getStatusColor(issue.status)}>
+          {issue.status}
+        </Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           {issue.imageUrl && (
-            <div className="rounded-lg overflow-hidden">
-              <Image
-                src={issue.imageUrl || "/placeholder.svg"}
-                alt={issue.title}
-                width={800}
-                height={400}
-                className="w-full object-cover"
-              />
-            </div>
+            <Image
+              src={issue.imageUrl}
+              alt={issue.title}
+              width={800}
+              height={400}
+              className="w-full rounded-lg object-cover"
+            />
           )}
 
           <div className="space-y-4">
@@ -244,14 +221,16 @@ export default function IssueDetailPage() {
               <div className="pt-4">
                 <Button
                   onClick={handleVote}
-                  disabled={issue.userHasVoted || voteLoading}
+                  disabled={voteLoading}
                   className="w-full"
                   variant={issue.userHasVoted ? "outline" : "default"}
                 >
                   <ThumbsUp className="mr-2 h-5 w-5" />
-                  {issue.userHasVoted ? "Voted" : "Vote"} ({issue.votes})
+                  {issue.votes}
                 </Button>
-                <p className="text-xs text-muted-foreground text-center mt-2">User can vote once only</p>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Click again to {issue.userHasVoted ? "remove" : "cast"} your vote
+                </p>
               </div>
             </CardContent>
           </Card>

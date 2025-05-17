@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
 import dbConnect from "@/lib/db"
 import Issue from "@/models/Issue"
 import Vote from "@/models/Vote"
-import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
   try {
