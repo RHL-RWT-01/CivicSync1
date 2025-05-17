@@ -21,7 +21,7 @@ const pulseIcon = L.divIcon({
   iconAnchor: [8, 8],
 })
 
-export default function LocationMarker({
+function LocationMarker({
   lat,
   lng,
   setLatLng,

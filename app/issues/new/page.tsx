@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation"
 import type React from "react"
 import { useState } from "react"
 
-const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap").then(mod => mod.default), {
+const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap").then(mod => mod.LocationPickerMap), {
   ssr: false,
 })
 
@@ -219,6 +219,7 @@ export default function NewIssuePage() {
                 lng={lng}
                 setLatLng={setLatLng}
                 setLocationText={setLocation}
+                location={location}
               />
 
               <div className="space-y-2">
