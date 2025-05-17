@@ -1,19 +1,41 @@
+// NewIssuePage.tsx
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/hooks/use-auth"
 import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
-import Link from "next/link"
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+} from "react-leaflet"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
+import { LocationPickerMap } from "@/components/LocationPickerMap"
 
 export default function NewIssuePage() {
   const router = useRouter()
@@ -24,16 +46,22 @@ export default function NewIssuePage() {
   const [description, setDescription] = useState("")
   const [category, setCategory] = useState("")
   const [location, setLocation] = useState("")
+  const [lat, setLat] = useState<number | null>(null)
+  const [lng, setLng] = useState<number | null>(null)
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const setLatLng = (lat: number, lng: number) => {
+    setLat(lat)
+    setLng(lng)
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       setImage(file)
 
-      // Create preview
       const reader = new FileReader()
       reader.onload = (event) => {
         setImagePreview(event.target?.result as string)
@@ -42,134 +70,92 @@ export default function NewIssuePage() {
     }
   }
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-
-  //   if (!title || !description || !category || !location) {
-  //     toast({
-  //       title: "Missing information",
-  //       description: "Please fill in all required fields",
-  //       variant: "destructive",
-  //     })
-  //     return
-  //   }
-
-  //   setIsSubmitting(true)
-
-  //   try {
-  //     // In a real app, you would upload the image to a storage service
-  //     // and get a URL back. For now, we'll just use a placeholder.
-  //     let imageUrl = null
-  //     if (image) {
-  //       // This is a placeholder. In a real app, you would upload the image
-  //       // to a storage service like AWS S3, Cloudinary, etc.
-  //       imageUrl = `/placeholder.svg?height=300&width=400&text=${encodeURIComponent(title)}`
-  //     }
-
-  //     const response = await fetch("/api/issues", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         title,
-  //         description,
-  //         category,
-  //         location,
-  //         imageUrl,
-  //       }),
-  //     })
-
-  //     if (!response.ok) {
-  //       const data = await response.json()
-  //       throw new Error(data.error || "Failed to create issue")
-  //     }
-
-  //     toast({
-  //       title: "Issue reported",
-  //       description: "Your issue has been successfully reported",
-  //     })
-
-  //     router.push("/my-issues")
-  //   } catch (error: any) {
-  //     console.error("Error creating issue:", error)
-  //     toast({
-  //       title: "Error",
-  //       description: error.message || "There was a problem submitting your issue. Please try again.",
-  //       variant: "destructive",
-  //     })
-  //   } finally {
-  //     setIsSubmitting(false)
-  //   }
-  // }
-
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
+    e.preventDefault()
 
-  if (!title || !description || !category || !location) {
-    toast({
-      title: "Missing information",
-      description: "Please fill in all required fields",
-      variant: "destructive",
-    })
-    return
-  }
-
-  setIsSubmitting(true)
-
-  try {
-    let imageUrl = null
-
-    if (image) {
-      const formData = new FormData()
-      formData.append("file", image)
-      formData.append("upload_preset", "unsigned_preset") 
-      const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: formData,
+    if (!title || !description || !category || !location) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
       })
-      const cloudinaryData = await cloudinaryResponse.json()
-      if (!cloudinaryData.secure_url) throw new Error("Image upload failed")
-      imageUrl = cloudinaryData.secure_url
+      return
     }
 
-    const response = await fetch("/api/issues", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        title,
-        description,
-        category,
-        location,
-        imageUrl,
-      }),
-    })
 
-    if (!response.ok) {
-      const data = await response.json()
-      throw new Error(data.error || "Failed to create issue")
+    if (location.length > 100) {
+      toast({
+        title: "Location too long",
+        description: "Please provide a shorter location name",
+        variant: "destructive",
+      })
+      return;
     }
 
-    toast({
-      title: "Issue reported",
-      description: "Your issue has been successfully reported",
-    })
+    setIsSubmitting(true)
 
-    router.push("/my-issues")
-  } catch (error: any) {
-    console.error("Error creating issue:", error)
-    toast({
-      title: "Error",
-      description: error.message || "There was a problem submitting your issue. Please try again.",
-      variant: "destructive",
-    })
-  } finally {
-    setIsSubmitting(false)
+    try {
+
+      let imageUrl = null
+
+      if (image) {
+        const formData = new FormData()
+        formData.append("file", image)
+        formData.append("upload_preset", "unsigned_preset")
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        )
+        const cloudinaryData = await cloudinaryResponse.json()
+        if (!cloudinaryData.secure_url) throw new Error("Image upload failed")
+        imageUrl = cloudinaryData.secure_url
+      }
+
+      const response = await fetch("/api/issues", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          location,
+          latitude: lat || null,
+          longitude: lng || null,
+          imageUrl,
+          createdBy: user?.id || "",
+          status: "Pending",
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Failed to create issue")
+      }
+
+      toast({
+        title: "Issue reported",
+        description: "Your issue has been successfully reported",
+      })
+
+      router.push("/my-issues")
+    } catch (error: any) {
+      console.error("Error creating issue:", error)
+      toast({
+        title: "Error",
+        description:
+          error.message ||
+          "There was a problem submitting your issue. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-}
-
 
   return (
     <div className="container py-8">
@@ -183,7 +169,9 @@ export default function NewIssuePage() {
         <Card>
           <CardHeader>
             <CardTitle>Report a Civic Issue</CardTitle>
-            <CardDescription>Provide details about the issue you want to report</CardDescription>
+            <CardDescription>
+              Provide details about the issue you want to report
+            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -204,7 +192,7 @@ export default function NewIssuePage() {
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-24 overflow-y-auto">
                     <SelectItem value="Road">Road</SelectItem>
                     <SelectItem value="Water">Water</SelectItem>
                     <SelectItem value="Sanitation">Sanitation</SelectItem>
@@ -214,7 +202,8 @@ export default function NewIssuePage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+
+              <div className="space-y-1">
                 <Label htmlFor="location">Location</Label>
                 <Input
                   id="location"
@@ -223,7 +212,19 @@ export default function NewIssuePage() {
                   onChange={(e) => setLocation(e.target.value)}
                   required
                 />
+                <p className="text-sm text-gray-500">
+                  To fill the location automatically, please select a location on map.
+                </p>
               </div>
+
+
+              <LocationPickerMap
+                lat={lat}
+                lng={lng}
+                setLatLng={setLatLng}
+                setLocationText={setLocation}
+                location={location}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -247,9 +248,17 @@ export default function NewIssuePage() {
                     className="w-full h-32 border-dashed flex flex-col items-center justify-center"
                   >
                     <ImagePlus className="h-8 w-8 mb-2 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Click to upload</span>
+                    <span className="text-sm text-muted-foreground">
+                      Click to upload
+                    </span>
                   </Button>
-                  <input id="image" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                  <input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
 
                   {imagePreview && (
                     <div className="relative h-32 w-32 rounded-md overflow-hidden">
@@ -273,11 +282,18 @@ export default function NewIssuePage() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Upload an image of the issue (max 5MB)</p>
+                <p className="text-xs text-muted-foreground">
+                  Upload an image of the issue (max 5MB)
+                </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => router.back()}
+                disabled={isSubmitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>

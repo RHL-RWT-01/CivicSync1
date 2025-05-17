@@ -33,6 +33,9 @@ interface Issue {
     email: string
   }
   userHasVoted?: boolean
+  longitude?: number
+  latitude?: number
+  
 }
 
 export default function IssuesPage() {

@@ -22,7 +22,6 @@ const VoteSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Ensure a user can only vote once per issue
 VoteSchema.index({ issue: 1, user: 1 }, { unique: true })
 
 export default mongoose.models.Vote || mongoose.model<IVote>("Vote", VoteSchema)

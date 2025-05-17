@@ -1,69 +1,76 @@
-import { NextResponse } from "next/server"
-import dbConnect from "@/lib/db"
-import Issue from "@/models/Issue"
-import Vote from "@/models/Vote"
-import { auth } from "@/lib/auth"
+import { NextResponse } from "next/server";
+import dbConnect from "@/lib/db";
+import Issue from "@/models/Issue";
+import Vote from "@/models/Vote";
+import { auth } from "@/lib/auth";
 
 // Get all issues with vote counts
 export async function GET(request: Request) {
   try {
-    await dbConnect()
+    await dbConnect();
 
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get("category")
-    const status = searchParams.get("status")
-    const search = searchParams.get("search")
-    const sort = searchParams.get("sort") || "newest"
-    const page = Number.parseInt(searchParams.get("page") || "1")
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category");
+    const status = searchParams.get("status");
+    const search = searchParams.get("search");
+    const sort = searchParams.get("sort") || "newest";
+    const page = Number.parseInt(searchParams.get("page") || "1");
+    const limit = Number.parseInt(searchParams.get("limit") || "10");
 
     // Build query
-    const query: any = {}
+    const query: any = {};
 
     if (category && category !== "all") {
-      query.category = category
+      query.category = category;
     }
 
     if (status && status !== "all") {
-      query.status = status
+      query.status = status;
     }
 
     if (search) {
-      query.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }]
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
     }
 
     // Calculate pagination
-    const skip = (page - 1) * limit
+    const skip = (page - 1) * limit;
 
     // Sort options
-    const sortOptions: any = {}
+    const sortOptions: any = {};
     if (sort === "newest") {
-      sortOptions.createdAt = -1
+      sortOptions.createdAt = -1;
     } else if (sort === "oldest") {
-      sortOptions.createdAt = 1
+      sortOptions.createdAt = 1;
     }
 
     // Get issues
-    const issues = await Issue.find(query).sort(sortOptions).skip(skip).limit(limit).populate("createdBy", "name email")
+    const issues = await Issue.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
+      .populate("createdBy", "name email");
 
     // Get total count for pagination
-    const totalIssues = await Issue.countDocuments(query)
+    const totalIssues = await Issue.countDocuments(query);
 
     // Get vote counts for each issue
     const issuesWithVotes = await Promise.all(
       issues.map(async (issue) => {
-        const voteCount = await Vote.countDocuments({ issue: issue._id })
+        const voteCount = await Vote.countDocuments({ issue: issue._id });
 
         // Check if current user has voted (if authenticated)
-        let userHasVoted = false
-        const session = await auth()
+        let userHasVoted = false;
+        const session = await auth();
 
         if (session?.user?.id) {
           const vote = await Vote.findOne({
             issue: issue._id,
             user: session.user.id,
-          })
-          userHasVoted = !!vote
+          });
+          userHasVoted = !!vote;
         }
 
         return {
@@ -78,47 +85,71 @@ export async function GET(request: Request) {
           createdAt: issue.createdAt,
           votes: voteCount,
           userHasVoted,
-        }
-      }),
-    )
+        };
+      })
+    );
 
     return NextResponse.json({
       issues: issuesWithVotes,
       totalIssues,
       totalPages: Math.ceil(totalIssues / limit),
       currentPage: page,
-    })
+    });
   } catch (error: any) {
-    console.error("Get issues error:", error)
-    return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 })
+    console.error("Get issues error:", error);
+    return NextResponse.json(
+      { error: error.message || "Something went wrong" },
+      { status: 500 }
+    );
   }
 }
 
 // Create a new issue
 export async function POST(request: Request) {
   try {
-    await dbConnect()
+    await dbConnect();
 
-    const session = await auth()
+    const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, category, location, imageUrl } = await request.json()
+    const {
+      title,
+      description,
+      category,
+      location,
+      imageUrl,
+      latitude,
+      longitude,
+      status,
+    } = await request.json();
 
-    const issue = await Issue.create({
+    const issueData: any = {
       title,
       description,
       category,
       location,
       imageUrl,
       createdBy: session.user.id,
-    })
+      status,
+    };
 
-    return NextResponse.json(issue, { status: 201 })
+    // Only add lat/lng if they're defined (not null)
+    if (latitude != null && longitude != null) {
+      issueData.latitude = latitude;
+      issueData.longitude = longitude;
+    }
+    const issue = await Issue.create(issueData);
+    await Issue.populate(issue, { path: "createdBy", select: "name email" });
+
+    return NextResponse.json(issue, { status: 201 });
   } catch (error: any) {
-    console.error("Create issue error:", error)
-    return NextResponse.json({ error: error.message || "Something went wrong" }, { status: 500 })
+    console.error("Create issue error:", error);
+    return NextResponse.json(
+      { error: error.message || "Something went wrong" },
+      { status: 500 }
+    );
   }
 }

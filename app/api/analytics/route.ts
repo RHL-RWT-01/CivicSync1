@@ -14,7 +14,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get issues by category
     const issuesByCategory = await Issue.aggregate([
       {
         $group: {
@@ -31,7 +30,6 @@ export async function GET(request: Request) {
       },
     ])
 
-    // Get issues created in the last 7 days
     const last7Days = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date()

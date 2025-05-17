@@ -1,22 +1,25 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-export type IssueCategory = "Road" | "Water" | "Sanitation" | "Electricity" | "Other"
-export type IssueStatus = "Pending" | "In Progress" | "Resolved"
+export type IssueCategory =
+  | "Road"
+  | "Water"
+  | "Sanitation"
+  | "Electricity"
+  | "Other";
+export type IssueStatus = "Pending" | "In Progress" | "Resolved";
 
 export interface IIssue extends mongoose.Document {
-  title: string
-  description: string
-  category: IssueCategory
-  location: string
-  imageUrl?: string
-  status: IssueStatus
-  createdBy: mongoose.Types.ObjectId
-  createdAt: Date
-  updatedAt: Date
-  longitude?: number
-  latitude?: number
-  votes?: number
-  userHasVoted?: boolean
+  title: string;
+  description: string;
+  category: IssueCategory;
+  location: string;
+  imageUrl?: string;
+  status: IssueStatus;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+  longitude?: number;
+  latitude?: number;
 }
 
 const IssueSchema = new mongoose.Schema(
@@ -60,8 +63,15 @@ const IssueSchema = new mongoose.Schema(
       ref: "User",
       required: [true, "Please provide a user"],
     },
+    longitude: {
+      type: Number,
+    },
+    latitude: {
+      type: Number,
+    },
   },
-  { timestamps: true },
-)
+  { timestamps: true }
+);
 
-export default mongoose.models.Issue || mongoose.model<IIssue>("Issue", IssueSchema)
+export default mongoose.models.Issue ||
+  mongoose.model<IIssue>("Issue", IssueSchema);

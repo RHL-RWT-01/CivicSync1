@@ -11,7 +11,6 @@ import { MapPin, ThumbsUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import dynamic from "next/dynamic";
 
-// Dynamically import the map to avoid SSR issues
 const DynamicMap = dynamic(() => import("@/components/dynamicMap"), {
   ssr: false,
 });
@@ -22,27 +21,36 @@ export default function MapPage() {
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const data = generateMapData();
-      setMapData(data);
-      setLoading(false);
-    }, 1500);
+    const fetchIssues = async () => {
+      try {
+        const res = await fetch("/api/map");
+        if (!res.ok) throw new Error("Failed to fetch issues");
 
-    return () => clearTimeout(timer);
+        const data = await res.json();
+
+        const formatted = data.map((issue: any) => ({
+          id: issue._id, 
+          title: issue.title,
+          latitude: issue.latitude,
+          longitude: issue.longitude,
+          location: issue.location,
+          category: issue.category,
+          createdAt: issue.createdAt,
+          status: issue.status,
+        }));
+
+        setMapData(formatted);
+      } catch (err) {
+        console.error("Error loading issues:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchIssues();
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500";
-      case "In Progress":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-500";
-      case "Resolved":
-        return "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500";
-      default:
-        return "";
-    }
-  };
+
 
   return (
     <div className="container py-8">
