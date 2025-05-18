@@ -1,6 +1,6 @@
 # CivicSync
 
-CivicSync is a full-stack web application built with **Next.js**, **MongoDB**, **Leaflet**, **Cloudinary**, and **shadcn/ui**. It enables users to report and visualize civic issues on an interactive map. This MVP is being developed for the MisogiAI program.
+CivicSync is a full-stack web application built with **Next.js**, **MongoDB**, **Leaflet**, **Cloudinary**, and **shadcn/ui**. It enables users to report and visualize civic issues on an interactive map.
 
 ---
 
