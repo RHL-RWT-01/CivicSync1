@@ -69,7 +69,8 @@ export default function NewIssuePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title || !description || !category || !location) {
+    if (!title || !description || !category || !location || lat === null || lng === null) {
+
       toast({
         title: "Missing information",
         description: "Please fill in all required fields",

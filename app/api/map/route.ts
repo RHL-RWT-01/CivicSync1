@@ -5,7 +5,12 @@ import dbConnect from "@/lib/db";
 export async function GET() {
   try {
     await dbConnect();
-    const issues = await Issue.find().sort({ createdAt: -1 });
+
+    //fetch issues that contain both latitude and longitude
+    const issues = await Issue.find({
+      latitude: { $ne: null },
+      longitude: { $ne: null },
+    }).sort({ createdAt: -1 });
 
     return NextResponse.json(issues, { status: 200 });
   } catch (error) {
