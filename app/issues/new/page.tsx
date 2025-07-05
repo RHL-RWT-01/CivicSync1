@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toast"
+
 import { useAuth } from "@/hooks/use-auth"
 import "leaflet/dist/leaflet.css"
 import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
@@ -28,6 +28,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type React from "react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap").then(mod => mod.LocationPickerMap), {
   ssr: false,
@@ -35,7 +36,6 @@ const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap")
 
 export default function NewIssuePage() {
   const router = useRouter()
-  const { toast } = useToast()
   const { user } = useAuth()
 
   const [title, setTitle] = useState("")
@@ -70,35 +70,27 @@ export default function NewIssuePage() {
     e.preventDefault()
 
     if (!title || !description || !category || !location || lat === null || lng === null) {
-
-      toast({
-        title: "Missing information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
+      toast.error("Please fill in all required fields"
+      )
       return
     }
 
-
     if (location.length > 100) {
-      toast({
-        title: "Location too long",
-        description: "Please provide a shorter location name",
-        variant: "destructive",
-      })
-      return;
+      toast.error("Please provide a shorter location name")
+      return
     }
 
     setIsSubmitting(true)
 
     try {
-
       let imageUrl = null
 
+      // Upload image if provided
       if (image) {
         const formData = new FormData()
         formData.append("file", image)
         formData.append("upload_preset", "unsigned_preset")
+
         const cloudinaryResponse = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
@@ -106,11 +98,17 @@ export default function NewIssuePage() {
             body: formData,
           }
         )
+
         const cloudinaryData = await cloudinaryResponse.json()
-        if (!cloudinaryData.secure_url) throw new Error("Image upload failed")
+
+        if (!cloudinaryResponse.ok || !cloudinaryData.secure_url) {
+          throw new Error("Image upload failed. Please try again.")
+        }
+
         imageUrl = cloudinaryData.secure_url
       }
 
+      // Submit issue to backend
       const response = await fetch("/api/issues", {
         method: "POST",
         headers: {
@@ -121,38 +119,36 @@ export default function NewIssuePage() {
           description,
           category,
           location,
-          latitude: lat || null,
-          longitude: lng || null,
+          latitude: lat,
+          longitude: lng,
           imageUrl,
           createdBy: user?.id || "",
           status: "Pending",
         }),
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to create issue")
+      if (response.status === 429) {
+        toast.error("You’ve reached your daily issue report limit. Try again in 24 hours.")
+        return
       }
 
-      toast({
-        title: "Issue reported",
-        description: "Your issue has been successfully reported",
-      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data?.error || "Something went wrong. Try again later.")
+      }
+
+      toast.success("Your issue has been successfully submitted."
+      )
 
       router.push("/my-issues")
     } catch (error: any) {
-      console.error("Error creating issue:", error)
-      toast({
-        title: "Error",
-        description:
-          error.message ||
-          "There was a problem submitting your issue. Please try again.",
-        variant: "destructive",
-      })
+      console.error("Submission error:", error)
+      toast.error("An unknown error occurred. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
   }
+
 
   return (
     <div className="container py-8">
@@ -303,8 +299,10 @@ export default function NewIssuePage() {
                 )}
               </Button>
             </CardFooter>
+
           </form>
         </Card>
+
       </div>
     </div>
   )

@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Issue from "@/models/Issue";
 import Vote from "@/models/Vote";
 import { auth } from "@/lib/auth";
+import { issueRateLimited } from "@/lib/rate-limit";
 
 // Get all issues with vote counts
 export async function GET(request: Request) {
@@ -113,6 +114,15 @@ export async function POST(request: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isIssueLimitExceeded = await issueRateLimited(session.user.id);
+
+    if(isIssueLimitExceeded){
+      return NextResponse.json(
+        { error: "Issue creation limit exceeded. Please try again later." },
+        { status: 429 }
+      );
     }
 
     const {

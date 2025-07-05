@@ -5,8 +5,9 @@ import "leaflet/dist/leaflet.css"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
-import { Toaster } from "@/components/ui/toaster"
+
 import Navbar from "@/components/navbar"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,7 +35,12 @@ export default function RootLayout({
                 </div>
               </footer>
             </div>
-            <Toaster />
+            <Toaster
+              position="top-center"
+              richColors
+              closeButton
+              duration={4000}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>
