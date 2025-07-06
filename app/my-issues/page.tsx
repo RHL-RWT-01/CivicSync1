@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -18,11 +18,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { useToast } from "@/components/ui/use-toast"
+
 import { useAuth } from "@/hooks/use-auth"
 import { Edit, Plus, ThumbsUp, Trash } from "lucide-react"
 import { format } from "date-fns"
 import type { IssueStatus } from "@/models/Issue"
+import { toast } from "sonner"
 
 interface Issue {
   id: string
@@ -37,8 +38,6 @@ interface Issue {
 }
 
 export default function MyIssuesPage() {
-  const router = useRouter()
-  const { toast } = useToast()
   const { user } = useAuth()
   const [issues, setIssues] = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,11 +61,7 @@ export default function MyIssuesPage() {
       setIssues(data)
     } catch (error) {
       console.error("Error fetching issues:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load your issues. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to load your issues. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -85,17 +80,10 @@ export default function MyIssuesPage() {
 
       setIssues(issues.filter((issue) => issue.id !== issueId))
 
-      toast({
-        title: "Issue deleted",
-        description: "Your issue has been successfully deleted",
-      })
+      toast.success("Your issue has been successfully deleted")
     } catch (error: any) {
-      console.error("Error deleting issue:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete issue. Please try again.",
-        variant: "destructive",
-      })
+      // console.error("Error deleting issue:", error)
+      toast(error.message || "Failed to delete issue. Please try again.")
     } finally {
       setIssueToDelete(null)
     }
