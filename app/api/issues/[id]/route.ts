@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Issue from "@/models/Issue";
 import Vote from "@/models/Vote";
 import { auth } from "@/lib/auth";
+import { redis } from "@/lib/redis";
 
 // Get a single issue with vote count
 export async function GET(
@@ -167,6 +168,13 @@ export async function DELETE(
 
     // Delete the issue
     await issue.deleteOne();
+    const key = `issue_limit:${session.user.id}`;
+    const currentCountRaw = await redis.get(key);
+    const currentCount = parseInt((currentCountRaw ?? "0").toString(), 10);
+
+    if (!isNaN(currentCount) && currentCount > 0) {
+      await redis.decr(key);
+    }
 
     return NextResponse.json({ message: "Issue deleted successfully" });
   } catch (error: any) {
