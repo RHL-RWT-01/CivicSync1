@@ -1,14 +1,21 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
 export default function RegisterPage() {
@@ -17,15 +24,14 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
   const { signUp } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      toast.error("Passwords do not match")
       return
     }
 
@@ -33,9 +39,11 @@ export default function RegisterPage() {
 
     try {
       await signUp(email, password, name)
-    } catch (error) {
+      toast.success("Account created successfully!")
+      router.push("/auth/login")
+    } catch (error: any) {
       console.error("Registration error:", error)
-      setError("Registration failed. Please try again.")
+      toast.error(error?.message || "Registration failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -50,10 +58,15 @@ export default function RegisterPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {error && <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">{error}</div>}
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input
+                id="name"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -99,7 +112,10 @@ export default function RegisterPage() {
             </Button>
             <div className="text-center text-sm">
               Already have an account?{" "}
-              <Link href="/auth/login" className="text-primary hover:underline">
+              <Link
+                href="/auth/login"
+                className="text-primary hover:underline"
+              >
                 Sign in
               </Link>
             </div>

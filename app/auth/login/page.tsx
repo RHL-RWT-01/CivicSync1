@@ -1,14 +1,21 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -16,6 +23,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { signIn } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,8 +31,14 @@ export default function LoginPage() {
 
     try {
       await signIn(email, password)
-    } catch (error) {
+
+      toast.success("Logged in successfully!")
+
+      router.push("/issues") 
+    } catch (error: any) {
       console.error("Login error:", error)
+
+      toast.error(error?.message || "Invalid credentials. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -35,7 +49,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-          <CardDescription>Enter your email and password to access your account</CardDescription>
+          <CardDescription>
+            Enter your email and password to access your account
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -53,7 +69,10 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -78,7 +97,10 @@ export default function LoginPage() {
             </Button>
             <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link href="/auth/register" className="text-primary hover:underline">
+              <Link
+                href="/auth/register"
+                className="text-primary hover:underline"
+              >
                 Sign up
               </Link>
             </div>
