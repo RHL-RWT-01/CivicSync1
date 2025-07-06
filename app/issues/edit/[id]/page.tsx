@@ -22,17 +22,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
-import {
-    MapContainer,
-    TileLayer,
-    Marker,
-    useMapEvents,
-} from "react-leaflet"
-import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 import { LocationPickerMap } from "@/components/LocationPickerMap"
+import { toast } from "sonner"
 
 
 
@@ -40,7 +33,6 @@ import { LocationPickerMap } from "@/components/LocationPickerMap"
 export default function EditIssuePage() {
     const { id } = useParams()
     const router = useRouter()
-    const { toast } = useToast()
 
     const [title, setTitle] = useState("")
     const [description, setDescription] = useState("")
@@ -96,11 +88,7 @@ export default function EditIssuePage() {
         e.preventDefault()
 
         if (!title || !description || !category || !location) {
-            toast({
-                title: "Missing fields",
-                description: "Please fill all required fields",
-                variant: "destructive",
-            })
+            toast.error("Please fill all required fields")
             return
         }
 
@@ -148,14 +136,10 @@ export default function EditIssuePage() {
                 throw new Error(err.error || "Failed to update issue")
             }
 
-            toast({ title: "Issue updated" })
+            toast.success("Issue updated" )
             router.push("/my-issues")
         } catch (err: any) {
-            toast({
-                title: "Error",
-                description: err.message || "Update failed",
-                variant: "destructive",
-            })
+            toast.error(err?.mesaage || "Update failed")
         } finally {
             setIsSubmitting(false)
         }
