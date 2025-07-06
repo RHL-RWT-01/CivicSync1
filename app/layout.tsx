@@ -14,6 +14,11 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "CivicSync - Citizen-Issue Reporting & Voting Platform",
   description: "Report and vote on civic issues in your community",
+  icons:{
+    icon: [
+      { url: "/logo.png", type: "image/png" }, 
+    ],
+  }
 }
 
 export default function RootLayout({
@@ -40,6 +45,7 @@ export default function RootLayout({
               richColors
               closeButton
               duration={4000}
+              theme="system"
             />
           </AuthProvider>
         </ThemeProvider>

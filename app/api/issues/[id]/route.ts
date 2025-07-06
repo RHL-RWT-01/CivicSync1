@@ -129,59 +129,57 @@ export async function PATCH(
 
 // Delete an issue
 export async function DELETE(
-  request: Request,
+  _req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    await dbConnect();
+    await dbConnect()
 
-    const session = await auth();
-
+    /* ──────── 1. Auth check ──────── */
+    const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    const userId = session.user.id
 
-    const issue = await Issue.findById(params.id);
-
+    /* ──────── 2. Issue existence / permissions ──────── */
+    const issue = await Issue.findById(params.id)
     if (!issue) {
-      return NextResponse.json({ error: "Issue not found" }, { status: 404 });
+      return NextResponse.json({ error: "Issue not found" }, { status: 404 })
     }
-
-    // Check if user is the creator of the issue
-    if (issue.createdBy.toString() !== session.user.id) {
+    if (issue.createdBy.toString() !== userId) {
       return NextResponse.json(
         { error: "Not authorized to delete this issue" },
         { status: 403 }
-      );
+      )
     }
-
-    // Check if issue is still in Pending status
     if (issue.status !== "Pending") {
       return NextResponse.json(
-        { error: "Cannot delete issue that is not in Pending status" },
+        { error: "Only pending issues can be deleted" },
         { status: 400 }
-      );
+      )
     }
 
-    // Delete all votes for this issue
-    await Vote.deleteMany({ issue: issue._id });
+    /* ──────── 3. Delete votes + issue ──────── */
+    await Vote.deleteMany({ issue: issue._id })
+    await issue.deleteOne()
 
-    // Delete the issue
-    await issue.deleteOne();
-    const key = `issue_limit:${session.user.id}`;
-    const currentCountRaw = await redis.get(key);
-    const currentCount = parseInt((currentCountRaw ?? "0").toString(), 10);
+    /* ──────── 4. Decrement Redis rate‑limit counter ──────── */
+    const key = `issue_limit:${userId}`
+    const countRaw = await redis.get<string | null>(key)
+    const count = Number(countRaw) || 0
 
-    if (!isNaN(currentCount) && currentCount > 0) {
-      await redis.decr(key);
+    if (count > 0) {
+      const newVal = await redis.decr(key)       // atomic
+      if (newVal < 0) await redis.set(key, "0")  // clamp at 0
     }
 
-    return NextResponse.json({ message: "Issue deleted successfully" });
-  } catch (error: any) {
-    console.error("Delete issue error:", error);
+    return NextResponse.json({ message: "Issue deleted successfully" })
+  } catch (err: any) {
+    console.error("Delete issue error:", err)
     return NextResponse.json(
-      { error: error.message || "Something went wrong" },
+      { error: err?.message || "Something went wrong" },
       { status: 500 }
-    );
+    )
   }
 }
