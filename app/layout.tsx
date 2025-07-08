@@ -15,9 +15,9 @@ export const metadata: Metadata = {
   title: "CivicSync - Citizen-Issue Reporting & Voting Platform",
   description: "Report and vote on civic issues in your community",
   icons:{
-    icon: [
-      { url: "/logo.png", type: "image/png" }, 
-    ],
+    icon: "logo.png",
+    shortcut: "logo.png",
+    apple: "logo.png",
   }
 }
 
