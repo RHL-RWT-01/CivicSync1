@@ -13,6 +13,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
+
+
 
 interface Issue {
   id: string
@@ -188,11 +191,12 @@ export default function IssueDetailPage() {
             <Image
               src={issue.imageUrl}
               alt={issue.title}
-              width={800}
-              height={400}
-              className="w-full rounded-lg object-cover"
+              width={700}
+              height={300}
+              className="rounded-lg object-cover"
             />
           )}
+
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Description</h2>
@@ -200,7 +204,7 @@ export default function IssueDetailPage() {
           </div>
         </div>
 
-        <div>
+        <div className="space-y-6 h-full w-full">
           <Card>
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-2">
@@ -234,6 +238,36 @@ export default function IssueDetailPage() {
               </div>
             </CardContent>
           </Card>
+          {issue.latitude && issue.longitude && (
+            <div className="mt-6 h-[300px] w-full rounded-lg overflow-hidden border-sky-100 border">
+              <h2 className="text-xl font-semibold m-2 ml-2">Location on Map</h2>
+
+              <MapContainer
+                center={[issue.latitude, issue.longitude]}
+                zoom={13}
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+                <CircleMarker
+                  center={[issue.latitude, issue.longitude]}
+                  radius={8}
+                  pathOptions={{
+                    color: "blue",
+                    fillColor: "blue",
+                    fillOpacity: 0.7,
+                  }}
+                >
+                  <Popup>
+                    <strong>{issue.title}</strong>
+                    <br />
+                    {issue.location}
+                  </Popup>
+                </CircleMarker>
+              </MapContainer>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
