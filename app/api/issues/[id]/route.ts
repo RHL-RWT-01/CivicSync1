@@ -15,7 +15,7 @@ export async function GET(
     const { id } = await params;
 
     const issue = await Issue.findById(id).populate("createdBy", "name email");
-
+    
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
@@ -46,6 +46,8 @@ export async function GET(
       createdBy: issue.createdBy,
       createdAt: issue.createdAt,
       votes: voteCount,
+      latitude: issue.latitude,
+      longitude: issue.longitude,
       userHasVoted,
     });
   } catch (error: any) {
