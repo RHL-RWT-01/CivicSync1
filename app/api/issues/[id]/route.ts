@@ -12,11 +12,9 @@ export async function GET(
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
 
-    const issue = await Issue.findById(params.id).populate(
-      "createdBy",
-      "name email"
-    );
+    const issue = await Issue.findById(id).populate("createdBy", "name email");
 
     if (!issue) {
       return NextResponse.json({ error: "Issue not found" }, { status: 404 });
@@ -133,53 +131,53 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await dbConnect()
+    await dbConnect();
 
     /* ──────── 1. Auth check ──────── */
-    const session = await auth()
+    const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const userId = session.user.id
+    const userId = session.user.id;
 
     /* ──────── 2. Issue existence / permissions ──────── */
-    const issue = await Issue.findById(params.id)
+    const issue = await Issue.findById(params.id);
     if (!issue) {
-      return NextResponse.json({ error: "Issue not found" }, { status: 404 })
+      return NextResponse.json({ error: "Issue not found" }, { status: 404 });
     }
     if (issue.createdBy.toString() !== userId) {
       return NextResponse.json(
         { error: "Not authorized to delete this issue" },
         { status: 403 }
-      )
+      );
     }
     if (issue.status !== "Pending") {
       return NextResponse.json(
         { error: "Only pending issues can be deleted" },
         { status: 400 }
-      )
+      );
     }
 
     /* ──────── 3. Delete votes + issue ──────── */
-    await Vote.deleteMany({ issue: issue._id })
-    await issue.deleteOne()
+    await Vote.deleteMany({ issue: issue._id });
+    await issue.deleteOne();
 
     /* ──────── 4. Decrement Redis rate‑limit counter ──────── */
-    const key = `issue_limit:${userId}`
-    const countRaw = await redis.get<string | null>(key)
-    const count = Number(countRaw) || 0
+    const key = `issue_limit:${userId}`;
+    const countRaw = await redis.get<string | null>(key);
+    const count = Number(countRaw) || 0;
 
     if (count > 0) {
-      const newVal = await redis.decr(key)       // atomic
-      if (newVal < 0) await redis.set(key, "0")  // clamp at 0
+      const newVal = await redis.decr(key); // atomic
+      if (newVal < 0) await redis.set(key, "0"); // clamp at 0
     }
 
-    return NextResponse.json({ message: "Issue deleted successfully" })
+    return NextResponse.json({ message: "Issue deleted successfully" });
   } catch (err: any) {
-    console.error("Delete issue error:", err)
+    console.error("Delete issue error:", err);
     return NextResponse.json(
       { error: err?.message || "Something went wrong" },
       { status: 500 }
-    )
+    );
   }
 }
