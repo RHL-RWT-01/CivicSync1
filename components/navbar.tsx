@@ -11,12 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/contexts/auth-context"
 import { BarChart2, LogOut, Map, Menu, Plus, ShieldCheck, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { FaGithub } from "react-icons/fa"
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -81,15 +80,6 @@ export default function Navbar() {
             ))}
           </nav>
           <div className="flex items-center space-x-4">
-            <Link
-              href="https://github.com/RHL-RWT-01/CivicSync1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-primary"
-            >
-              <FaGithub className="h-5 w-5 text-muted-foreground text-blue-500 shadow-md shadow-blue-500/50 transition" />
-
-            </Link>
             <ThemeToggle />
             {user ? (
               <>
@@ -180,15 +170,6 @@ export default function Navbar() {
                   </Link>
                 ))}
                 <div className="flex items-center justify-start gap-4 py-2">
-                  <Link
-                    href="https://github.com/RHL-RWT-01/CivicSync1"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-primary"
-                  >
-                    <FaGithub className="h-5 w-5 text-muted-foreground hover:text-blue-500 hover:shadow-md hover:shadow-blue-500/50 transition" />
-
-                  </Link>
                   <ThemeToggle />
                 </div>
                 {user ? (

@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { useTheme } from "next-themes"
-import { useToast } from "@/components/ui/use-toast"
-import type { IssueCategory } from "@/lib/data"
+import { IssueCategory } from "@/app/types/clientTypes";
+import { useToast } from "@/components/ui/use-toast";
+import { useTheme } from "next-themes";
+import { useEffect, useRef } from "react";
 
 // Donut Chart Component
 export function DonutChart({ data }: { data: { name: string; value: number }[] }) {

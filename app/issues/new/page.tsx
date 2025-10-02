@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/contexts/auth-context"
 import "leaflet/dist/leaflet.css"
 import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
 import dynamic from "next/dynamic"
@@ -47,7 +47,7 @@ export default function NewIssuePage() {
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
+  const api_url = process.env.NEXT_PUBLIC_SERVER_URL
   const setLatLng = (lat: number, lng: number) => {
     setLat(lat)
     setLng(lng)
@@ -109,7 +109,7 @@ export default function NewIssuePage() {
       }
 
       // Submit issue to backend
-      const response = await fetch("/api/issues", {
+      const response = await fetch(`${api_url}/issue/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,6 +125,7 @@ export default function NewIssuePage() {
           createdBy: user?.id || "",
           status: "Pending",
         }),
+        credentials: "include",
       })
 
       if (response.status === 429) {
@@ -137,13 +138,15 @@ export default function NewIssuePage() {
         throw new Error(data?.error || "Something went wrong. Try again later.")
       }
 
-      toast.success("Your issue has been successfully submitted."
+      toast.success("Your issue has been successfully submitted.", {
+        style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
+      }
       )
 
       router.push("/my-issues")
     } catch (error: any) {
       console.error("Submission error:", error)
-      toast.error("An unknown error occurred. Please try again.")
+      toast.error("Error submitting issue ", error.message || "Please try again later.")
     } finally {
       setIsSubmitting(false)
     }

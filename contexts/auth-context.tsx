@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type User = {
     id: string;
@@ -112,6 +113,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!response.ok) {
                 throw new Error("Failed to sign out. Please try again.");
             }
+            toast.success("Successfully signed out", {
+                style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
+            });
 
             setUser(null);
             router.push("/");
