@@ -102,7 +102,7 @@ export default function Navbar() {
                       className="relative h-9 w-9 rounded-full p-0 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition"
                     >
                       <span className="sr-only">Open user menu</span>
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground border border-border">
                         <span className="text-sm font-semibold">
                           {user.email?.charAt(0).toUpperCase() || "U"}
                         </span>

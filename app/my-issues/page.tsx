@@ -74,7 +74,6 @@ export default function MyIssuesPage() {
         method: "DELETE",
         credentials: "include",
       })
-      console.log(response)
 
       if (!response.ok) {
         const data = await response.json()
