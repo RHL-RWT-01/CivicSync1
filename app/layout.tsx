@@ -1,20 +1,19 @@
-import type React from "react"
+import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/contexts/auth-context"
+import "leaflet/dist/leaflet.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import "leaflet/dist/leaflet.css"
+import type React from "react"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/components/auth-provider"
 
 import Navbar from "@/components/navbar"
 import { Toaster } from "@/components/ui/sonner"
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "CivicSync - Citizen-Issue Reporting & Voting Platform",
   description: "Report and vote on civic issues in your community",
-  icons:{
+  icons: {
     icon: "logo.png",
     shortcut: "logo.png",
     apple: "logo.png",

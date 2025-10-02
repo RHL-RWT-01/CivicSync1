@@ -1,13 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
@@ -16,7 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useAuth } from "@/contexts/auth-context"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import React, { useState } from "react"
+import { toast } from "sonner"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -39,7 +39,9 @@ export default function RegisterPage() {
 
     try {
       await signUp(email, password, name)
-      toast.success("Account created successfully!")
+      toast.success("Account created successfully!", {
+        style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
+      })
       router.push("/auth/login")
     } catch (error: any) {
       console.error("Registration error:", error)

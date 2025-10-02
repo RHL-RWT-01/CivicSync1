@@ -7,36 +7,28 @@ import { formatDistanceToNow } from "date-fns";
 import { MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { Issue } from "../types/clientTypes";
 
 const DynamicMap = dynamic(() => import("@/components/dynamicMap"), {
   ssr: false,
 });
 
 export default function MapPage() {
-  const [mapData, setMapData] = useState<any[]>([]);
+  const [mapData, setMapData] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState<string | null>(null);
+  const api_url = process.env.NEXT_PUBLIC_SERVER_URL;
 
   useEffect(() => {
     const fetchIssues = async () => {
       try {
-        const res = await fetch("/api/map");
+        const res = await fetch(`${api_url}/issue/recent-issues`, {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to fetch issues");
 
         const data = await res.json();
-
-        const formatted = data.map((issue: any) => ({
-          id: issue._id, 
-          title: issue.title,
-          latitude: issue.latitude,
-          longitude: issue.longitude,
-          location: issue.location,
-          category: issue.category,
-          createdAt: issue.createdAt,
-          status: issue.status,
-        }));
-
-        setMapData(formatted);
+        setMapData(data);
       } catch (err) {
         console.error("Error loading issues:", err);
       } finally {
@@ -68,7 +60,7 @@ export default function MapPage() {
         </div>
 
         <div>
-          <Card>
+          <Card className="border-2 border-blue-500 rounded-lg w-full h-full">
             <CardHeader>
               <CardTitle>Recent Issues</CardTitle>
             </CardHeader>
@@ -77,7 +69,7 @@ export default function MapPage() {
                 {loading ? (
                   <div className="space-y-4 p-4">
                     {Array.from({ length: 5 }).map((_, index) => (
-                      <div key={index} className="flex gap-3">
+                      <div key={`skeleton-${index}`} className="flex gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
                         <div className="space-y-2 flex-1">
                           <Skeleton className="h-4 w-3/4" />
@@ -87,7 +79,7 @@ export default function MapPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="divide-y ">
                     {mapData.slice(0, 10).map((issue) => (
                       <div
                         key={issue.id}

@@ -1,19 +1,19 @@
 "use client"
 
+import { IssueCategory, IssueStatus } from "@/app/types/clientTypes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/components/ui/use-toast"
-import { useAuth } from "@/hooks/use-auth"
-import type { IssueCategory, IssueStatus } from "@/models/Issue"
+import { useAuth } from "@/contexts/auth-context"
 import { format } from "date-fns"
 import { ArrowLeft, Calendar, MapPin, ThumbsUp, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
+import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet"
+import { toast } from "sonner"
 
 
 
@@ -40,12 +40,12 @@ interface Issue {
 export default function IssueDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { toast } = useToast()
   const { user } = useAuth()
   const [issue, setIssue] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(true)
+  const [hasUserVoted, setHasUserVoted] = useState(false)
   const [voteLoading, setVoteLoading] = useState(false)
-
+  const api_url = process.env.NEXT_PUBLIC_SERVER_URL
   useEffect(() => {
     if (params.id) fetchIssue()
   }, [params.id])
@@ -53,14 +53,10 @@ export default function IssueDetailPage() {
   const fetchIssue = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/issues/${params.id}`)
+      const response = await fetch(`${api_url}/issue/${params.id}`)
       if (!response.ok) {
         if (response.status === 404) {
-          toast({
-            title: "Issue not found",
-            description: "The requested issue could not be found.",
-            variant: "destructive",
-          })
+          toast.error("The requested issue could not be found.")
           router.push("/issues")
           return
         }
@@ -69,13 +65,10 @@ export default function IssueDetailPage() {
 
       const data = await response.json()
       setIssue(data)
+      setHasUserVoted(data.userHasVoted)
     } catch (error) {
       console.error("Error fetching issue:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load issue details. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to load issue details. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -83,11 +76,7 @@ export default function IssueDetailPage() {
 
   const handleVote = async () => {
     if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to vote on issues",
-        variant: "destructive",
-      })
+      toast.error("Login to vote on issues.")
       router.push("/auth/login")
       return
     }
@@ -96,18 +85,15 @@ export default function IssueDetailPage() {
     setVoteLoading(true)
 
     try {
-      const response = await fetch(`/api/issues/${issue.id}/vote`, {
-        method: issue.userHasVoted ? "DELETE" : "POST",
+      const response = await fetch(`${api_url}/issue/vote/${issue.id}`, {
+        method: "POST",
+        credentials: "include",
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        toast({
-          title: "Vote failed",
-          description: data.error || "An error occurred.",
-          variant: "destructive",
-        })
+        toast.error(data.error || "An error occurred.")
         return
       }
 
@@ -121,19 +107,12 @@ export default function IssueDetailPage() {
           : prev
       )
 
-      toast({
-        title: issue.userHasVoted ? "Vote removed" : "Vote recorded",
-        description: issue.userHasVoted
-          ? "Your vote has been removed."
-          : "Your vote has been successfully recorded.",
+      toast.success(issue.userHasVoted ? "Vote removed" : "Vote recorded", {
+        style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
       })
     } catch (error) {
       console.error("Error voting:", error)
-      toast({
-        title: "Error",
-        description: "Failed to process your vote. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to process your vote. Please try again.")
     } finally {
       setVoteLoading(false)
     }

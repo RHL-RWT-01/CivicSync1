@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuth } from "@/contexts/auth-context"
 import { ArrowRight, CheckCircle, MapPin, ThumbsUp, Users } from "lucide-react"
 import Link from "next/link"
 

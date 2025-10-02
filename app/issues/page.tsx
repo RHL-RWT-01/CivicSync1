@@ -2,26 +2,25 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useSearchParams, useRouter } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
-import type { IssueStatus } from "@/models/Issue"
-import { Clock, MapPin, Search, ThumbsUp } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { Clock, MapPin, Search, ThumbsUp } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { useCallback, useEffect, useState } from "react"
+import { IssueCategory, IssueStatus } from "../types/clientTypes"
 
 interface Issue {
   id: string
   title: string
   description: string
-  category: string
+  category: IssueCategory
   location: string
   imageUrl?: string
   status: IssueStatus
@@ -35,36 +34,56 @@ interface Issue {
   userHasVoted?: boolean
   longitude?: number
   latitude?: number
-  
 }
 
 export default function IssuesPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
   const { toast } = useToast()
-  const [issues, setIssues] = useState<Issue[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("newest")
+
+  const [issues, setIssues] = useState<Issue[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
   const [totalIssues, setTotalIssues] = useState(0)
+  const [hasNextPage, setHasNextPage] = useState(false)
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false)
 
+  const api_url = process.env.NEXT_PUBLIC_SERVER_URL;
+
+  // Debounce search query
   useEffect(() => {
-    fetchIssues()
-  }, [currentPage, searchQuery, categoryFilter, statusFilter, sortBy])
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 500) // 0.5 second delay
 
-  const fetchIssues = async () => {
-    setLoading(true)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch issues function
+  const fetchIssues = useCallback(async (page: number = 1, loadMore: boolean = false) => {
     try {
+      if (!api_url) {
+        throw new Error("Server URL is not configured");
+      }
+
+      if (!loadMore) {
+        setIsLoading(true)
+        setError(null)
+      } else {
+        setIsFetchingNextPage(true)
+      }
+
       const queryParams = new URLSearchParams()
-      queryParams.append("page", currentPage.toString())
+      queryParams.append("page", page.toString())
       queryParams.append("limit", "9")
 
-      if (searchQuery) {
-        queryParams.append("search", searchQuery)
+      if (debouncedSearchQuery) {
+        queryParams.append("search", debouncedSearchQuery)
       }
 
       if (categoryFilter && categoryFilter !== "all") {
@@ -77,25 +96,59 @@ export default function IssuesPage() {
 
       queryParams.append("sort", sortBy)
 
-      const response = await fetch(`/api/issues?${queryParams.toString()}`)
+      const response = await fetch(`${api_url}/issue/issues?${queryParams.toString()}`)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch issues")
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch issues`)
       }
 
       const data = await response.json()
-      setIssues(data.issues)
+      if (loadMore) {
+        setIssues(prevIssues => [...prevIssues, ...data.issues])
+      } else {
+        setIssues(data.issues)
+      }
+
       setTotalPages(data.totalPages)
       setTotalIssues(data.totalIssues)
+      setCurrentPage(page)
+      setHasNextPage(page < data.totalPages)
+
     } catch (error) {
       console.error("Error fetching issues:", error)
+
+      // Handle different error types
+      let errorMessage = "Failed to load issues. Please try again."
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = "Network error. Please check your connection."
+      } else if (error instanceof Error) {
+        errorMessage = error.message
+      }
+
+      setError(new Error(errorMessage))
+
       toast({
         title: "Error",
-        description: "Failed to load issues. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+      setIsFetchingNextPage(false)
+    }
+  }, [api_url, debouncedSearchQuery, categoryFilter, statusFilter, sortBy, toast])
+
+  // Fetch issues when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+    fetchIssues(1, false)
+  }, [fetchIssues])
+
+  // Load more function
+  const fetchNextPage = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchIssues(currentPage + 1, true)
     }
   }
 
@@ -113,10 +166,8 @@ export default function IssuesPage() {
     }
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setCurrentPage(1)
-    fetchIssues()
+  const handleSearchQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
   }
 
   return (
@@ -133,20 +184,19 @@ export default function IssuesPage() {
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <form onSubmit={handleSearch} className="relative">
+        <form className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title"
+            placeholder="Search by title or description"
             className="pl-8"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchQueryChange}
           />
         </form>
         <Select
           value={categoryFilter}
           onValueChange={(value) => {
             setCategoryFilter(value)
-            setCurrentPage(1)
           }}
         >
           <SelectTrigger>
@@ -165,7 +215,6 @@ export default function IssuesPage() {
           value={statusFilter}
           onValueChange={(value) => {
             setStatusFilter(value)
-            setCurrentPage(1)
           }}
         >
           <SelectTrigger>
@@ -182,7 +231,6 @@ export default function IssuesPage() {
           value={sortBy}
           onValueChange={(value) => {
             setSortBy(value)
-            setCurrentPage(1)
           }}
         >
           <SelectTrigger>
@@ -196,7 +244,7 @@ export default function IssuesPage() {
       </div>
 
       {/* Issues Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, index) => (
             <Card key={index} className="overflow-hidden">
@@ -269,38 +317,31 @@ export default function IssuesPage() {
             ))}
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
+          {/* Load More Button */}
+          {hasNextPage && (
             <div className="flex justify-center mt-8">
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className="w-8"
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="min-w-32"
+              >
+                {isFetchingNextPage ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More Issues"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Show total issues count */}
+          {totalIssues > 0 && (
+            <div className="text-center mt-4 text-sm text-muted-foreground">
+              Showing {issues.length} of {totalIssues} issues
             </div>
           )}
         </>

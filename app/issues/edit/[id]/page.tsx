@@ -1,8 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
-import Link from "next/link"
+import { LocationPickerMap } from "@/components/LocationPickerMap"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -14,7 +12,6 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
     Select,
     SelectContent,
@@ -22,9 +19,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 import "leaflet/dist/leaflet.css"
-import { LocationPickerMap } from "@/components/LocationPickerMap"
+import { ArrowLeft, ImagePlus, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 
@@ -45,6 +45,8 @@ export default function EditIssuePage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    const api_url = process.env.NEXT_PUBLIC_SERVER_URL
+
     const setLatLng = (lat: number, lng: number) => {
         setLat(lat)
         setLng(lng)
@@ -53,7 +55,7 @@ export default function EditIssuePage() {
     useEffect(() => {
         async function fetchIssue() {
             try {
-                const res = await fetch(`/api/issues/${id}`)
+                const res = await fetch(`${api_url}/issue/${id}`)
                 const data = await res.json()
 
                 setTitle(data.title)
@@ -114,7 +116,7 @@ export default function EditIssuePage() {
                 imageUrl = data.secure_url
             }
 
-            const res = await fetch(`/api/issues/${id}`, {
+            const res = await fetch(`${api_url}/issue/update/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -129,6 +131,7 @@ export default function EditIssuePage() {
                     longitude: lng,
                     imageUrl,
                 }),
+                credentials: "include",
             })
 
             if (!res.ok) {
@@ -136,7 +139,9 @@ export default function EditIssuePage() {
                 throw new Error(err.error || "Failed to update issue")
             }
 
-            toast.success("Issue updated" )
+            toast.success("Issue updated", {
+                style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
+            })
             router.push("/my-issues")
         } catch (err: any) {
             toast.error(err?.mesaage || "Update failed")

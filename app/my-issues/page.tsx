@@ -1,12 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,13 +14,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
-import { useAuth } from "@/hooks/use-auth"
-import { Edit, Plus, ThumbsUp, Trash } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 import { format } from "date-fns"
-import type { IssueStatus } from "@/models/Issue"
+import { Edit, Plus, ThumbsUp, Trash } from "lucide-react"
 import { toast } from "sonner"
-
+type IssueStatus = "Pending" | "In Progress" | "Resolved"
 interface Issue {
   id: string
   title: string
@@ -42,7 +41,7 @@ export default function MyIssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([])
   const [loading, setLoading] = useState(true)
   const [issueToDelete, setIssueToDelete] = useState<string | null>(null)
-
+  const api_url = process.env.NEXT_PUBLIC_SERVER_URL
   useEffect(() => {
     if (!user) return
     fetchMyIssues()
@@ -51,7 +50,9 @@ export default function MyIssuesPage() {
   const fetchMyIssues = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/issues/user")
+      const response = await fetch(`${api_url}/issue/user`, {
+        credentials: "include",
+      })
 
       if (!response.ok) {
         throw new Error("Failed to fetch issues")
@@ -69,9 +70,11 @@ export default function MyIssuesPage() {
 
   const handleDelete = async (issueId: string) => {
     try {
-      const response = await fetch(`/api/issues/${issueId}`, {
+      const response = await fetch(`${api_url}/issue/delete/${issueId}`, {
         method: "DELETE",
+        credentials: "include",
       })
+      console.log(response)
 
       if (!response.ok) {
         const data = await response.json()
@@ -80,7 +83,9 @@ export default function MyIssuesPage() {
 
       setIssues(issues.filter((issue) => issue.id !== issueId))
 
-      toast.success("Your issue has been successfully deleted")
+      toast.success("Your issue has been successfully deleted", {
+        style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
+      })
     } catch (error: any) {
       // console.error("Error deleting issue:", error)
       toast(error.message || "Failed to delete issue. Please try again.")

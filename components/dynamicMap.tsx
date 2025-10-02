@@ -1,18 +1,11 @@
 'use client';
 
+import { Issue } from '@/app/types/clientTypes';
 import '@/lib/fixLeafletIcon';
 import { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
-
-type Issue = {
-    id: string;
-    title: string;
-    latitude: number;
-    longitude: number;
-    location: string;
-};
 
 interface DynamicMapProps {
     issues: Issue[];
@@ -49,7 +42,8 @@ export default function DynamicMap({ issues, selectedId, onSelect }: DynamicMapP
         <MapContainer
             center={center}
             zoom={13}
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+            className="border-2 border-blue-500 rounded-lg"
         >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
