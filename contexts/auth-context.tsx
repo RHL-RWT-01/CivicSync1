@@ -42,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
             }
         } catch (error) {
-            console.error("Error fetching user:", error);
             setUser(null);
         } finally {
             setLoading(false);
@@ -76,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             return true;
         } catch (error) {
-            console.error("Login error:", error);
             throw new Error("Failed to sign in. Please try again.");
         }
     };
@@ -121,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push("/");
             router.refresh();
         } catch (error) {
-            console.error("Logout error:", error);
             throw new Error("Failed to sign out. Please try again.");
         }
     };

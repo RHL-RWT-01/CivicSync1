@@ -8,6 +8,7 @@ import {
   TileLayer,
   useMapEvents,
 } from "react-leaflet"
+import { toast } from "sonner"
 
 const pulseIcon = L.divIcon({
   className: "",
@@ -48,7 +49,7 @@ function LocationMarker({
           setLocationText(data.display_name)
         }
       } catch (err) {
-        console.error("Reverse geocoding failed", err)
+        toast.error("Failed to fetch address. Please try again.")
       }
     },
   })
