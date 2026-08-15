@@ -4,17 +4,15 @@ import { IssueCategory, IssueStatus } from "@/app/types/clientTypes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAuth } from "@/contexts/auth-context"
 import { sampleIssues } from "@/lib/sample-issues"
 import { categoryFallback, statusFallback } from "@/lib/issue-ui"
 import { format } from "date-fns"
-import { ArrowLeft, Calendar, Info, MapPin, ThumbsUp, User } from "lucide-react"
+import { ArrowLeft, Calendar, MapPin, ThumbsUp, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { CircleMarker, MapContainer, Popup, TileLayer } from "react-leaflet"
-import { toast } from "sonner"
 
 
 
@@ -40,104 +38,27 @@ interface Issue {
 
 export default function IssueDetailPage() {
   const params = useParams()
-  const router = useRouter()
-  const { user } = useAuth()
   const [issue, setIssue] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isSample, setIsSample] = useState(false)
-  const [voteLoading, setVoteLoading] = useState(false)
-  const api_url = process.env.NEXT_PUBLIC_SERVER_URL
-  useEffect(() => {
-    if (params.id) fetchIssue()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id])
+  const voteLoading = false
 
-  const loadSample = () => {
+  // Runs on demo data so any issue link resolves instantly, backend or not.
+  useEffect(() => {
     const s = sampleIssues.find((i) => i.id === params.id) ?? sampleIssues[0]
     setIssue({ ...s, userHasVoted: false } as Issue)
-    setIsSample(true)
-  }
+    setLoading(false)
+  }, [params.id])
 
-  const fetchIssue = async () => {
-    setLoading(true)
-    setIsSample(false)
-    // Sample ids resolve straight from local demo data.
-    if (typeof params.id === "string" && params.id.startsWith("sample-")) {
-      loadSample()
-      setLoading(false)
-      return
-    }
-    try {
-      const response = await fetch(`${api_url}/issue/${params.id}`)
-      if (!response.ok) throw new Error("Failed to fetch issue")
-      const data = await response.json()
-      setIssue(data)
-    } catch (error) {
-      console.error("Error fetching issue:", error)
-      // Graceful fallback so the page never dead-ends for portfolio visitors.
-      loadSample()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleVote = async () => {
-    if (!user) {
-      toast.error("Login to vote on issues.")
-      router.push("/auth/login")
-      return
-    }
-
-    if (!issue) return
-
-    // Sample mode: toggle the vote locally (no backend).
-    if (isSample) {
-      setIssue((prev) =>
-        prev
-          ? {
-              ...prev,
-              userHasVoted: !prev.userHasVoted,
-              votes: prev.votes + (prev.userHasVoted ? -1 : 1),
-            }
-          : prev
-      )
-      return
-    }
-
-    setVoteLoading(true)
-
-    try {
-      const response = await fetch(`${api_url}/issue/vote/${issue.id}`, {
-        method: "POST",
-        credentials: "include",
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        toast.error(data.error || "An error occurred.")
-        return
-      }
-
-      setIssue((prev) =>
-        prev
-          ? {
+  const handleVote = () => {
+    setIssue((prev) =>
+      prev
+        ? {
             ...prev,
-            votes: data.votes,
-            userHasVoted: data.userHasVoted,
+            userHasVoted: !prev.userHasVoted,
+            votes: prev.votes + (prev.userHasVoted ? -1 : 1),
           }
-          : prev
-      )
-
-      toast.success(issue.userHasVoted ? "Vote removed" : "Vote recorded", {
-        style: { background: "#1e293b", color: "#3b82f6" }, // bg-slate-800 + blue text
-      })
-    } catch (error) {
-      console.error("Error voting:", error)
-      toast.error("Failed to process your vote. Please try again.")
-    } finally {
-      setVoteLoading(false)
-    }
+        : prev
+    )
   }
 
   if (loading) {
@@ -164,16 +85,6 @@ export default function IssueDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to issues
         </Button>
       </Link>
-
-      {isSample && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            <span className="font-semibold">Sample issue.</span> The live server is asleep
-            (free tier) — this is demo content showing how a report looks.
-          </p>
-        </div>
-      )}
 
       <h1 className="text-3xl font-bold tracking-tight mb-4">{issue.title}</h1>
       <div className="flex flex-wrap items-center gap-2 mb-6">

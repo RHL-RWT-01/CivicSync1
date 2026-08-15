@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { sampleAnalytics } from "@/lib/sample-issues"
-import { BarChart2, CheckCircle, Info, ListTodo, PieChart, ThumbsUp, TrendingUp } from "lucide-react"
-import { useEffect, useState } from "react"
+import { BarChart2, CheckCircle, ListTodo, PieChart, ThumbsUp, TrendingUp } from "lucide-react"
+import { useState } from "react"
 
 interface AnalyticsData {
   issuesByCategory: { name: string; value: number }[]
@@ -18,32 +18,9 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isSample, setIsSample] = useState(false)
-  const api_url = process.env.NEXT_PUBLIC_SERVER_URL
-  useEffect(() => {
-    fetchAnalytics()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const fetchAnalytics = async () => {
-    setLoading(true)
-    setIsSample(false)
-    try {
-      const response = await fetch(`${api_url}/issue/analytics`)
-      if (!response.ok) throw new Error("Failed to fetch analytics data")
-      const analyticsData = await response.json()
-      setData(analyticsData)
-    } catch (error) {
-      console.error("Error fetching analytics:", error)
-      // Graceful fallback: show representative sample analytics.
-      setData(sampleAnalytics as AnalyticsData)
-      setIsSample(true)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Runs entirely on representative demo data so the dashboard is always complete.
+  const [data] = useState<AnalyticsData>(sampleAnalytics as AnalyticsData)
+  const loading = false
 
   return (
     <div className="container py-10">
@@ -54,16 +31,6 @@ export default function AnalyticsPage() {
           Spot trends, hotspots and the categories your community cares about most.
         </p>
       </div>
-
-      {isSample && !loading && (
-        <div className="mb-8 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            <span className="font-semibold">Showing sample analytics.</span> The live server is
-            asleep (free tier) — these charts illustrate the dashboard with representative data.
-          </p>
-        </div>
-      )}
 
       {loading ? (
         <>
