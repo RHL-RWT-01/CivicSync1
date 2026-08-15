@@ -16,20 +16,33 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current
     if (!el) return
+
+    const show = () => {
+      el.style.transitionDelay = `${delay}ms`
+      el.classList.add("in")
+    }
+
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            ;(e.target as HTMLElement).style.transitionDelay = `${delay}ms`
-            e.target.classList.add("in")
-            io.unobserve(e.target)
+            show()
+            io.disconnect()
           }
         }
       },
       { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
     )
     io.observe(el)
-    return () => io.disconnect()
+
+    // Safety net: some environments (backgrounded tabs, restrictive embeds) never
+    // fire IntersectionObserver — reveal anyway so content is never stuck hidden.
+    const fallback = window.setTimeout(show, 700)
+
+    return () => {
+      io.disconnect()
+      window.clearTimeout(fallback)
+    }
   }, [delay])
 
   return (

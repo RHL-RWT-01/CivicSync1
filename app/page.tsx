@@ -354,7 +354,7 @@ function HeroVisual() {
 
       {/* Floating "resolved" chip */}
       <div
-        className="glass civic-float absolute -bottom-5 -left-6 flex items-center gap-2 rounded-xl px-3.5 py-2.5 shadow-xl"
+        className="glass civic-float absolute -bottom-8 -left-6 flex items-center gap-2 rounded-xl px-3.5 py-2.5 shadow-xl"
         style={{ animationDelay: "1.5s" }}
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500">
@@ -368,7 +368,7 @@ function HeroVisual() {
 
       {/* Floating vote chip */}
       <div
-        className="glass civic-float absolute -right-5 top-8 flex items-center gap-2 rounded-xl px-3 py-2 shadow-xl"
+        className="glass civic-float absolute -right-5 -top-6 flex items-center gap-2 rounded-xl px-3 py-2 shadow-xl"
         style={{ animationDelay: "0.8s" }}
       >
         <TrendingUp className="h-4 w-4 text-primary" />
