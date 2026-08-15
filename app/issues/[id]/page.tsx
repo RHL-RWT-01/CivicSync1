@@ -1,13 +1,14 @@
 "use client"
 
 import { IssueCategory, IssueStatus } from "@/app/types/clientTypes"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/contexts/auth-context"
+import { sampleIssues } from "@/lib/sample-issues"
+import { categoryFallback, statusFallback } from "@/lib/issue-ui"
 import { format } from "date-fns"
-import { ArrowLeft, Calendar, MapPin, ThumbsUp, User } from "lucide-react"
+import { ArrowLeft, Calendar, Info, MapPin, ThumbsUp, User } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
@@ -43,32 +44,38 @@ export default function IssueDetailPage() {
   const { user } = useAuth()
   const [issue, setIssue] = useState<Issue | null>(null)
   const [loading, setLoading] = useState(true)
-  const [hasUserVoted, setHasUserVoted] = useState(false)
+  const [isSample, setIsSample] = useState(false)
   const [voteLoading, setVoteLoading] = useState(false)
   const api_url = process.env.NEXT_PUBLIC_SERVER_URL
   useEffect(() => {
     if (params.id) fetchIssue()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
+
+  const loadSample = () => {
+    const s = sampleIssues.find((i) => i.id === params.id) ?? sampleIssues[0]
+    setIssue({ ...s, userHasVoted: false } as Issue)
+    setIsSample(true)
+  }
 
   const fetchIssue = async () => {
     setLoading(true)
+    setIsSample(false)
+    // Sample ids resolve straight from local demo data.
+    if (typeof params.id === "string" && params.id.startsWith("sample-")) {
+      loadSample()
+      setLoading(false)
+      return
+    }
     try {
       const response = await fetch(`${api_url}/issue/${params.id}`)
-      if (!response.ok) {
-        if (response.status === 404) {
-          toast.error("The requested issue could not be found.")
-          router.push("/issues")
-          return
-        }
-        throw new Error("Failed to fetch issue")
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch issue")
       const data = await response.json()
       setIssue(data)
-      setHasUserVoted(data.userHasVoted)
     } catch (error) {
       console.error("Error fetching issue:", error)
-      toast.error("Failed to load issue details. Please try again.")
+      // Graceful fallback so the page never dead-ends for portfolio visitors.
+      loadSample()
     } finally {
       setLoading(false)
     }
@@ -82,6 +89,21 @@ export default function IssueDetailPage() {
     }
 
     if (!issue) return
+
+    // Sample mode: toggle the vote locally (no backend).
+    if (isSample) {
+      setIssue((prev) =>
+        prev
+          ? {
+              ...prev,
+              userHasVoted: !prev.userHasVoted,
+              votes: prev.votes + (prev.userHasVoted ? -1 : 1),
+            }
+          : prev
+      )
+      return
+    }
+
     setVoteLoading(true)
 
     try {
@@ -118,19 +140,6 @@ export default function IssueDetailPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-500"
-      case "In Progress":
-        return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-500"
-      case "Resolved":
-        return "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-500"
-      default:
-        return ""
-    }
-  }
-
   if (loading) {
     return (
       <div className="container py-8">
@@ -156,30 +165,57 @@ export default function IssueDetailPage() {
         </Button>
       </Link>
 
+      {isSample && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <span className="font-semibold">Sample issue.</span> The live server is asleep
+            (free tier) — this is demo content showing how a report looks.
+          </p>
+        </div>
+      )}
+
       <h1 className="text-3xl font-bold tracking-tight mb-4">{issue.title}</h1>
-      <div className="flex flex-wrap gap-2 mb-6">
-        <Badge variant="secondary">{issue.category}</Badge>
-        <Badge variant="outline" className={getStatusColor(issue.status)}>
+      <div className="flex flex-wrap items-center gap-2 mb-6">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-sm font-medium">
+          {(() => {
+            const Icon = categoryFallback(issue.category).icon
+            return <Icon className="h-3.5 w-3.5" />
+          })()}
+          {issue.category}
+        </span>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${statusFallback(issue.status).badge}`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${statusFallback(issue.status).dot}`} />
           {issue.status}
-        </Badge>
+        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          {issue.imageUrl && (
+          {issue.imageUrl ? (
             <Image
               src={issue.imageUrl}
               alt={issue.title}
               width={700}
               height={300}
-              className="rounded-lg object-cover"
+              className="w-full rounded-xl object-cover"
             />
+          ) : (
+            <div
+              className={`flex aspect-[16/7] w-full items-center justify-center rounded-xl border border-border bg-gradient-to-br ${categoryFallback(issue.category).tint}`}
+            >
+              {(() => {
+                const Icon = categoryFallback(issue.category).icon
+                return <Icon className="h-16 w-16 opacity-80" />
+              })()}
+            </div>
           )}
-
 
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Description</h2>
-            <p className="text-muted-foreground whitespace-pre-line">{issue.description}</p>
+            <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{issue.description}</p>
           </div>
         </div>
 

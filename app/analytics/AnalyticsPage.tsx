@@ -4,8 +4,8 @@ import { BarChart, DonutChart, LineChart } from "@/components/charts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
-import { BarChart2, CheckCircle, ListTodo, PieChart, ThumbsUp, TrendingUp } from "lucide-react"
+import { sampleAnalytics } from "@/lib/sample-issues"
+import { BarChart2, CheckCircle, Info, ListTodo, PieChart, ThumbsUp, TrendingUp } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface AnalyticsData {
@@ -18,43 +18,52 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const { toast } = useToast()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isSample, setIsSample] = useState(false)
   const api_url = process.env.NEXT_PUBLIC_SERVER_URL
   useEffect(() => {
     fetchAnalytics()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchAnalytics = async () => {
     setLoading(true)
+    setIsSample(false)
     try {
       const response = await fetch(`${api_url}/issue/analytics`)
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch analytics data")
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch analytics data")
       const analyticsData = await response.json()
       setData(analyticsData)
     } catch (error) {
       console.error("Error fetching analytics:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load analytics data. Please try again.",
-        variant: "destructive",
-      })
+      // Graceful fallback: show representative sample analytics.
+      setData(sampleAnalytics as AnalyticsData)
+      setIsSample(true)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="container py-8">
+    <div className="container py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Civic Issue Analytics</h1>
-        <p className="text-muted-foreground mt-1">Visualize and analyze civic issue data and trends</p>
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Insights</span>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Civic issue analytics</h1>
+        <p className="mt-2 max-w-xl text-muted-foreground">
+          Spot trends, hotspots and the categories your community cares about most.
+        </p>
       </div>
+
+      {isSample && !loading && (
+        <div className="mb-8 flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <span className="font-semibold">Showing sample analytics.</span> The live server is
+            asleep (free tier) — these charts illustrate the dashboard with representative data.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <>

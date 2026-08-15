@@ -18,6 +18,31 @@ export interface SampleIssue {
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
 
+// Sample analytics shown when the live backend is unreachable.
+export const sampleAnalytics = {
+  totalIssues: 135,
+  totalVotes: 1240,
+  openIssues: 88,
+  issuesByCategory: [
+    { name: "Road", value: 42 },
+    { name: "Sanitation", value: 35 },
+    { name: "Water", value: 28 },
+    { name: "Electricity", value: 19 },
+    { name: "Other", value: 11 },
+  ],
+  last7Days: Array.from({ length: 7 }).map((_, i) => ({
+    date: new Date(Date.now() - (6 - i) * 86_400_000).toISOString().slice(0, 10),
+    count: [8, 12, 6, 15, 11, 18, 14][i],
+  })),
+  topVotedIssues: [
+    { id: "sample-4", title: "Water leakage flooding the footpath", category: "Water", votes: 152 },
+    { id: "sample-1", title: "Large pothole near MG Road junction", category: "Road", votes: 128 },
+    { id: "sample-3", title: "Overflowing garbage bins at the market", category: "Sanitation", votes: 96 },
+    { id: "sample-6", title: "Faded zebra crossing outside the school", category: "Road", votes: 88 },
+    { id: "sample-2", title: "Streetlight out for two weeks on 5th Cross", category: "Electricity", votes: 74 },
+  ],
+}
+
 // Realistic demo issues shown when the live backend is unreachable, so the
 // project always looks alive for portfolio visitors. Clearly flagged as sample.
 export const sampleIssues: SampleIssue[] = [
